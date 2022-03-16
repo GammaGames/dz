@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# ip [id] - Prints out a container's name, IP, and port. If no id provided, prints info for all containers.
+function dz.ip() {
+    if [ -z $1 ]; then
+        docker ps -a --format "{{.ID}}" | while read -r line ; do
+            echo $line $(docker inspect --format "{{.Config.Image}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $line | sed 's/\///'):$(docker port "$line" | grep -o "0.0.0.0:.*" | cut -f2 -d:)
+        done
+    else
+        echo $(docker inspect --format "{{.Config.Image}} {{.ID }} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" $1 | sed 's/\///'):$(docker port "$1" | grep -o "0.0.0.0:.*" | cut -f2 -d:)
+    fi
+}
+
+# sh [id] - Attach a shell to a docker with an id
+function dz.sh() {
+    if [ -z $2 ]; then
+        docker exec -it $1 /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+    else
+        docker exec -u $1  -it $2 /bin/bash -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+    fi
+}
+
+dz.help() {
+    if [ "$(type -t dz.$1)" == "function" ]; then
+        declare -f "dz.$1" | sed '1,2d;$d' | sed -e "s/^    //"
+    else
+        echo "ez docker"
+        echo "==== COMMANDS ========="
+        echo "dz                        runs `dz ip` command |"
+        echo "dz ip [ID]                print a conatiner's name, IP, and port (all containers if blank) |"
+        echo "dz sh [USERNAME] [ID]     bash into a container with optional username |"
+    fi
+}
+
+if [ "$(type -t dz.$1)" == "function" ]; then
+    "dz.$@"
+elif [ "$1" == "-h" ]; then
+    dz.help
+elif [ -z "$1" ]; then
+    dz.ip
+fi
