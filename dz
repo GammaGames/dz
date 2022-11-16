@@ -20,15 +20,24 @@ function dz.sh() {
     fi
 }
 
-dz.help() {
+function dz.logs() {
+    if [ -z $2 ]; then
+        docker logs -fn 0 $1
+    else
+        docker logs -fn $1 $2
+    fi
+}
+
+function dz.help() {
     if [ "$(type -t dz.$1)" == "function" ]; then
         declare -f "dz.$1" | sed '1,2d;$d' | sed -e "s/^    //"
     else
         echo "ez docker"
         echo "==== COMMANDS ========="
-        echo "dz                        runs `dz ip` command |"
-        echo "dz ip [ID]                print a conatiner's name, IP, and port (all containers if blank) |"
-        echo "dz sh [USERNAME] [ID]     bash into a container with optional username |"
+        echo "dz                        runs `dz ip` command"
+        echo "dz ip [ID]                print a conatiner's name, IP, and port (all containers if blank)"
+        echo "dz sh [USERNAME] [ID]     bash into a container with optional username"
+        echo "dz logs [NUM_LINES] [ID]  tail (and follow) a container's logs (0 previous lines if blank)"
     fi
 }
 
