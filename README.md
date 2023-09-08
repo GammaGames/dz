@@ -15,5 +15,6 @@ alias dz='. ~/Documents/dz/dz'
 |----------------------------------|--------------------------------------------------------------------------|
 | `dz` | runs `dz ip` command |
 | `dz ip [ID]` | print a conatiner's name, IP, and port (all containers if blank) |
+| `dz v [filter]` | `prints volumes with sizes (dangling if blank, all if 'all')` |`
 | `dz sh [USERNAME] <ID>` | bash into a container with optional username |
 | `dz logs [NUM_LINES] <ID>` | tail (and follow) a container's logs (0 lines if blank) |

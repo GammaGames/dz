@@ -45,6 +45,16 @@ function dz.logs() {
     fi
 }
 
+function dz.v() {
+    if [ -z $1 ]; then
+        docker volume ls -f dangling=true --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
+    elif [ $1 == "all" ]; then
+        docker volume ls --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
+    else
+        docker volume ls -f $1 --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
+    fi
+}
+
 function dz.help() {
     if [ "$(type -t dz.$1)" == "function" ]; then
         declare -f "dz.$1" | sed '1,2d;$d' | sed -e "s/^    //"
@@ -53,6 +63,7 @@ function dz.help() {
         echo "==== COMMANDS ========="
         echo "dz                        runs 'dz ip' command"
         echo "dz ip [ID]                print a conatiner's name, IP, and port (all containers if blank)"
+        echo "dz v [filter]             prints volumes with sizes (dangling if blank, all if 'all')"
         echo "dz sh [USERNAME] <ID>     bash into a container with optional username"
         echo "dz logs [NUM_LINES] <ID>  tail (and follow) a container's logs (0 lines if blank)"
     fi
