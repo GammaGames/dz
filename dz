@@ -3,28 +3,24 @@
 # ip [id] - Prints out a container's name, IP, and port. If no id provided, prints info for all containers.
 function dz.ip() {
     _print_container_info() {
-        local container_id
         local container_ports
         local container_ip
         local container_name
-        container_id="${1}"
 
-        container_ports=( $(docker port "$container_id" | grep -o "0.0.0.0:.*" | cut -f2 -d:) )
-        container_name="$(docker inspect --format "{{ .Name }}" "$container_id" | sed 's/\///')"
-        container_ip="$(docker inspect --format "{{range .NetworkSettings.Networks}}{{.IPAddress}}  {{end}}" "$container_id")"
-        printf "%-13s %-40s %-20s %-80s\n" "$container_id" "$container_name" "$container_ip" "${container_ports[*]}"
+        container_ports=$(docker port "${1}" | perl -n -e'/0.0.0.0:(\d+)/ && printf("%d ", $1)' )
+        container_name="$(docker inspect --format "{{ .Name }}" "${1}" | sed 's/\///')"
+        container_ip="$(docker inspect --format "{{range .NetworkSettings.Networks}}{{.IPAddress}}  {{end}}" "${1}")"
+        printf "%-13s %-40s %-20s %-80s\n" "${1}" "$container_name" "$container_ip" "${container_ports[*]}"
     }
 
-    local container_id
-    container_id="$1"
     printf "%-13s %-40s %-20s %-80s\n" 'Container Id' 'Container Name' 'Container IP' 'Container Ports'
-    if [ -z "$container_id" ]; then
+    if [ -z "${1}" ]; then
         local container_id
-        docker ps -a --format "{{.ID}}" | while read -r container_id ; do
+        docker ps -q | while read -r container_id ; do
             _print_container_info  "$container_id"
         done
     else
-        _print_container_info  "$container_id"
+        _print_container_info  "${1}"
     fi
 }
 
