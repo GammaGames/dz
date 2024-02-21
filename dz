@@ -27,9 +27,9 @@ function dz.ip() {
 # sh [id] - Attach a shell to a docker with an id
 function dz.sh() {
     if [ -z $2 ]; then
-        docker exec -it $1 /bin/bash -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+        docker exec -it $1 /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
     else
-        docker exec -u $1 -it $2 /bin/bash -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+        docker exec -u $1 -it $2 /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
     fi
 }
 
