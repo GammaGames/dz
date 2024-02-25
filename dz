@@ -28,6 +28,34 @@ function dz.ip() {
     rm /tmp/dz.ip.txt
 }
 
+# net [id] - Prints out a networks's name, IPs and gateways. If no id or name provided, prints info for all networks.
+function dz.net() {
+    _print_network_info() {
+        network_name="$(docker network inspect --format "{{.Name}}" "${1}" | sed 's/\///')"
+        network_id="$(docker network inspect --format "{{.ID}}" "${1}")"
+        network_subnets="$(docker network inspect --format "{{range .IPAM.Config}}{{.Subnet}}{{end}}" "${1}")"
+        network_gateways="$(docker network inspect --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}" "${1}")"
+
+        echo "${network_id:0:12}","$network_name","$network_subnets","$network_gateways" >>/tmp/dz.net.txt
+    }
+
+    echo "Network ID,Network Name,Network Subnet,Network Gateway" >/tmp/dz.net.txt
+
+    if [ -z "${1}" ]; then
+        local network_id
+        docker network ls --format "{{.ID}}" | while read -r network_id; do
+            _print_network_info "$network_id"
+        done
+    else
+        # only calls _print_network_info if passed param exits
+        docker network ls --format "{{.ID}} {{.Name}}" | grep -q "\b${1}\b" && _print_network_info "${1}"
+    fi
+
+    column -s "," -t /tmp/dz.net.txt
+
+    rm -r /tmp/dz.net.txt
+}
+
 # sh [id] - Attach a shell to a docker with an id
 function dz.sh() {
     if [ -z $2 ]; then
@@ -63,6 +91,7 @@ function dz.help() {
         echo "==== COMMANDS ========="
         echo "dz                        runs 'dz ip' command"
         echo "dz ip [ID]                print a container's name, IPs, ports, networks and gateways (all containers if blank)"
+        echo "dz net [ID]               print a networks's name, IPs and gateways (all networks if blank)"
         echo "dz v [filter]             prints volumes with sizes (dangling if blank, all if 'all')"
         echo "dz sh [USERNAME] <ID>     bash into a container with optional username"
         echo "dz logs [NUM_LINES] <ID>  tail (and follow) a container's logs (0 lines if blank)"
