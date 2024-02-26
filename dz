@@ -21,7 +21,7 @@ function dz.ip() {
         done
     else
         # only calls _print_container_info if passed param exits (ID or Name)
-        docker container ls --format "{{.ID}} {{.Names}}" | grep -q "\b${1}\b" && _print_container_info "${1}"
+        docker container ls --format "{{.ID}} {{.Names}}" | grep -q "\b${1}" && _print_container_info "${1}"
     fi
 
     column -s "," -t /tmp/dz.ip.txt
@@ -48,7 +48,7 @@ function dz.net() {
         done
     else
         # only calls _print_network_info if passed param exits
-        docker network ls --format "{{.ID}} {{.Name}}" | grep -q "\b${1}\b" && _print_network_info "${1}"
+        docker network ls --format "{{.ID}} {{.Name}}" | grep -q "\b${1}" && _print_network_info "${1}"
     fi
 
     column -s "," -t /tmp/dz.net.txt
