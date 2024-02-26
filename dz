@@ -26,7 +26,7 @@ function dz.ip() {
         done
     else
         # print all containers that ID or Name starts with ${1}
-        docker container ls -a --format "{{.ID}} {{.Names}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}" | while read -r container_id; do
+        docker container ls --format "{{.ID}} {{.Names}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}" | while read -r container_id; do
             _print_container_info "$container_id"
         done
     fi
