@@ -3,6 +3,10 @@
 # ip [id] - Prints out a container's name, IPs, ports, networks and gateways. If no id or name provided, prints info for all containers.
 function dz.ip() {
     _print_container_info() {
+        # return if ${1} is empty
+        if [ -z ${1} ]; then
+            return
+        fi
         container_ports="$(docker container inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{if ne (index $conf 0).HostIp "0.0.0.0"}}{{(index $conf 0).HostIp}}:{{end}}{{(index $conf 0).HostPort}}{{else}}null{{end}}:{{$p}} {{end}}' "${1}")"
         container_id="$(docker container inspect --format "{{.ID}}" "${1}")"
         container_name="$(docker container inspect --format "{{ .Name }}" "${1}" | sed 's/\///')"
@@ -20,8 +24,8 @@ function dz.ip() {
             _print_container_info "$container_id"
         done
     else
-        # only calls _print_container_info if passed param exits (ID or Name)
-        docker container ls --format "{{.ID}} {{.Names}}" | grep -q "\b${1}" && _print_container_info "${1}"
+        # passes first column (ID) to _print_container_info if "ID Names" matches first word (ID) or after space (Name)
+        _print_container_info $(docker container ls -a --format "{{.ID}} {{.Names}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}")
     fi
 
     column -s "," -t /tmp/dz.ip.txt
@@ -31,6 +35,10 @@ function dz.ip() {
 # net [id] - Prints out a networks's name, IPs and gateways. If no id or name provided, prints info for all networks.
 function dz.net() {
     _print_network_info() {
+        # return if ${1} is empty
+        if [ -z ${1} ]; then
+            return
+        fi
         network_name="$(docker network inspect --format "{{.Name}}" "${1}" | sed 's/\///')"
         network_id="$(docker network inspect --format "{{.ID}}" "${1}")"
         network_subnets="$(docker network inspect --format "{{range .IPAM.Config}}{{.Subnet}}{{end}}" "${1}")"
@@ -47,8 +55,8 @@ function dz.net() {
             _print_network_info "$network_id"
         done
     else
-        # only calls _print_network_info if passed param exits
-        docker network ls --format "{{.ID}} {{.Name}}" | grep -q "\b${1}" && _print_network_info "${1}"
+        # passes first column (ID) to _print_network_info if "ID Name" matches first word (ID) or after space (Name)
+        _print_network_info $(docker network ls --format "{{.ID}} {{.Name}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}")
     fi
 
     column -s "," -t /tmp/dz.net.txt
