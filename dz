@@ -18,14 +18,17 @@ function dz.ip() {
     }
 
     echo "Container Id,Container Name,Container IPs,Container Ports,Container Networks,Container Gateways" >/tmp/dz.ip.txt
+    local container_id
     if [ -z "${1}" ]; then
-        local container_id
+        # if ${1} is empty, print all containers
         docker ps -q | while read -r container_id; do
             _print_container_info "$container_id"
         done
     else
-        # passes first column (ID) to _print_container_info if "ID Names" matches first word (ID) or after space (Name)
-        _print_container_info $(docker container ls -a --format "{{.ID}} {{.Names}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}")
+        # print all containers that ID or Name starts with ${1}
+        docker container ls -a --format "{{.ID}} {{.Names}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}" | while read -r container_id; do
+            _print_container_info "$container_id"
+        done
     fi
 
     column -s "," -t /tmp/dz.ip.txt
@@ -49,14 +52,17 @@ function dz.net() {
 
     echo "Network ID,Network Name,Network Subnet,Network Gateway" >/tmp/dz.net.txt
 
+    local network_id
     if [ -z "${1}" ]; then
-        local network_id
+        # if ${1} is empty, print all networks
         docker network ls --format "{{.ID}}" | while read -r network_id; do
             _print_network_info "$network_id"
         done
     else
-        # passes first column (ID) to _print_network_info if "ID Name" matches first word (ID) or after space (Name)
-        _print_network_info $(docker network ls --format "{{.ID}} {{.Name}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}")
+        # print all networks that ID or Name starts with ${1}
+        docker network ls --format "{{.ID}} {{.Name}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}" | while read -r network_id; do
+            _print_network_info "$network_id"
+        done
     fi
 
     column -s "," -t /tmp/dz.net.txt
