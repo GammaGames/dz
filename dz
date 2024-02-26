@@ -3,7 +3,7 @@
 # ip [id] - Prints out a container's name, IPs, ports, networks and gateways. If no id or name provided, prints info for all containers.
 function dz.ip() {
     _print_container_info() {
-        container_ports="$(docker container inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{(index $conf 0).HostPort}}{{else}}null{{end}}:{{$p}} {{end}}' "${1}")"
+        container_ports="$(docker container inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{if ne (index $conf 0).HostIp "0.0.0.0"}}{{(index $conf 0).HostIp}}:{{end}}{{(index $conf 0).HostPort}}{{else}}null{{end}}:{{$p}} {{end}}' "${1}")"
         container_id="$(docker container inspect --format "{{.ID}}" "${1}")"
         container_name="$(docker container inspect --format "{{ .Name }}" "${1}" | sed 's/\///')"
         container_ip="$(docker container inspect --format "{{range .NetworkSettings.Networks}}{{.IPAddress}}  {{end}}" "${1}")"
