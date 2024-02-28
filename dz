@@ -7,14 +7,16 @@ function dz.ip() {
         if [ -z ${1} ]; then
             return
         fi
-        container_ports="$(docker container inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{if ne (index $conf 0).HostIp "0.0.0.0"}}{{(index $conf 0).HostIp}}:{{end}}{{(index $conf 0).HostPort}}{{else}}null{{end}}:{{$p}} {{end}}' "${1}")"
-        container_id="$(docker container inspect --format "{{.ID}}" "${1}")"
-        container_name="$(docker container inspect --format "{{ .Name }}" "${1}" | sed 's/\///')"
-        container_ip="$(docker container inspect --format "{{range .NetworkSettings.Networks}}{{.IPAddress}}  {{end}}" "${1}")"
-        container_network=($(docker container inspect --format "{{range \$k, \$v := .NetworkSettings.Networks}}{{printf \"%s\n\" \$k}}{{end}}" "${1}"))
-        container_gateway="$(docker container inspect --format "{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}" "${1}")"
 
-        echo "${container_id:0:12}","$container_name","$container_ip","$container_ports","${container_network[*]}","$container_gateway" >>/tmp/dz.ip.txt
+        container_inspect=$(docker container inspect --format "{{slice .Id 0 12}}""\
+,{{slice .Name 1}}""\
+,{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}""\
+,{{range \$p, \$conf := .NetworkSettings.Ports}}{{if \$conf}}{{if ne (index \$conf 0).HostIp \"0.0.0.0\"}}{{(index \$conf 0).HostIp}}:{{end}}{{(index \$conf 0).HostPort}}{{else}}null{{end}}:{{\$p}} {{end}}""\
+,{{range \$k, \$v := .NetworkSettings.Networks}}{{\$k}}{{end}}""\
+,{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}" \
+            ${1})
+
+        echo $container_inspect >>/tmp/dz.ip.txt
     }
 
     echo "Container Id,Container Name,Container IPs,Container Ports,Container Networks,Container Gateways" >/tmp/dz.ip.txt
@@ -49,12 +51,14 @@ function dz.net() {
         if [ -z ${1} ]; then
             return
         fi
-        network_name="$(docker network inspect --format "{{.Name}}" "${1}" | sed 's/\///')"
-        network_id="$(docker network inspect --format "{{.ID}}" "${1}")"
-        network_subnets="$(docker network inspect --format "{{range .IPAM.Config}}{{.Subnet}}{{end}}" "${1}")"
-        network_gateways="$(docker network inspect --format "{{range .IPAM.Config}}{{.Gateway}}{{end}}" "${1}")"
 
-        echo "${network_id:0:12}","$network_name","$network_subnets","$network_gateways" >>/tmp/dz.net.txt
+        network_inspect=$(docker network inspect --format "{{slice .Id 0 12}}""\
+,{{.Name}}""\
+,{{range .IPAM.Config}}{{.Subnet}}{{end}}""\
+,{{range .IPAM.Config}}{{if (index . \"Gateway\")}}{{.Gateway}}{{end}}{{end}}" \
+            "${1}")
+
+        echo $network_inspect >>/tmp/dz.net.txt
     }
 
     echo "Network ID,Network Name,Network Subnet,Network Gateway" >/tmp/dz.net.txt
