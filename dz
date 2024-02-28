@@ -18,15 +18,22 @@ function dz.ip() {
     }
 
     echo "Container Id,Container Name,Container IPs,Container Ports,Container Networks,Container Gateways" >/tmp/dz.ip.txt
-    local container_id
+
+    all_flag=""
+    if [ "${1}" == "-all" ]; then
+        all_flag="-a"
+        container_search=$2
+    else
+        container_search=$1
+    fi
     if [ -z "${1}" ]; then
         # if ${1} is empty, print all containers
-        docker ps -q | while read -r container_id; do
+        docker ps $all_flag -q | while read -r container_id; do
             _print_container_info "$container_id"
         done
     else
         # print all containers that ID or Name starts with ${1}
-        docker container ls --format "{{.ID}} {{.Names}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}" | while read -r container_id; do
+        docker container ls $all_flag --format "{{.ID}} {{.Names}}" | awk "/^${container_search}|[[:space:]]${container_search}/ {print \$1}" | while read -r container_id; do
             _print_container_info "$container_id"
         done
     fi
@@ -104,7 +111,8 @@ function dz.help() {
         echo "ez docker"
         echo "==== COMMANDS ========="
         echo "dz                        runs 'dz ip' command"
-        echo "dz ip [ID]                print a container's name, IPs, ports, networks and gateways (all containers if blank)"
+        echo "dz ip [-all] [ID]         print a container's name, IPs, ports, networks and gateways (all containers running if blank)"
+        echo "                          -all option to search non running containers"
         echo "dz net [ID]               print a networks's name, IPs and gateways (all networks if blank)"
         echo "dz v [filter]             prints volumes with sizes (dangling if blank, all if 'all')"
         echo "dz sh [USERNAME] <ID>     bash into a container with optional username"
