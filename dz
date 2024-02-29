@@ -12,7 +12,7 @@ function dz.ip() {
 ,{{slice .Name 1}}""\
 ,{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}""\
 ,{{range \$p, \$conf := .NetworkSettings.Ports}}{{if \$conf}}{{if ne (index \$conf 0).HostIp \"0.0.0.0\"}}{{(index \$conf 0).HostIp}}:{{end}}{{(index \$conf 0).HostPort}}{{else}}null{{end}}:{{\$p}} {{end}}""\
-,{{range \$k, \$v := .NetworkSettings.Networks}}{{\$k}}{{end}}""\
+,{{range \$k, \$v := .NetworkSettings.Networks}}{{\$k}} {{end}}""\
 ,{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}" \
             ${1})
 
