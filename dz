@@ -1,41 +1,52 @@
 #!/bin/bash
 
+# Helper function to print container info
+_print_container_info() {
+    local container_id="$1"
+    [ -z "$container_id" ] && return
+
+    local container_inspect
+    container_inspect=$(docker container inspect --format \
+        '{{slice .Id 0 12}},{{slice .Name 1}},{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}},'\
+'{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{if ne (index $conf 0).HostIp "0.0.0.0"}}{{(index $conf 0).HostIp}}:{{end}}{{(index $conf 0).HostPort}}{{else}}null{{end}}:{{$p}} {{end}},'\
+'{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}},{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}' \
+        "$container_id")
+
+    echo "$container_inspect" >>/tmp/dz.ip.txt
+}
+
+# Helper function to print network info
+_print_network_info() {
+    local network_id="$1"
+    [ -z "$network_id" ] && return
+
+    local network_inspect
+    network_inspect=$(docker network inspect --format \
+        '{{slice .Id 0 12}},{{.Name}},{{range .IPAM.Config}}{{.Subnet}}{{end}},{{range .IPAM.Config}}{{if (index . "Gateway")}}{{.Gateway}}{{end}}{{end}}' \
+        "$network_id")
+
+    echo "$network_inspect" >>/tmp/dz.net.txt
+}
+
 # ip [id] - Prints out a container's name, IPs, ports, networks and gateways. If no id or name provided, prints info for all containers.
 function dz.ip() {
-    _print_container_info() {
-        # return if ${1} is empty
-        if [ -z ${1} ]; then
-            return
-        fi
-
-        container_inspect=$(docker container inspect --format "{{slice .Id 0 12}}""\
-,{{slice .Name 1}}""\
-,{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}""\
-,{{range \$p, \$conf := .NetworkSettings.Ports}}{{if \$conf}}{{if ne (index \$conf 0).HostIp \"0.0.0.0\"}}{{(index \$conf 0).HostIp}}:{{end}}{{(index \$conf 0).HostPort}}{{else}}null{{end}}:{{\$p}} {{end}}""\
-,{{range \$k, \$v := .NetworkSettings.Networks}}{{\$k}} {{end}}""\
-,{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}" \
-            ${1})
-
-        echo $container_inspect >>/tmp/dz.ip.txt
-    }
-
     echo "Container Id,Container Name,Container IPs,Container Ports,Container Networks,Container Gateways" >/tmp/dz.ip.txt
 
-    all_flag=""
-    if [ "${1}" == "-all" ]; then
+    local all_flag=""
+    local container_search="$1"
+    if [ "$1" == "-all" ]; then
         all_flag="-a"
-        container_search=$2
-    else
-        container_search=$1
+        container_search="$2"
     fi
-    if [ -z "${1}" ]; then
-        # if ${1} is empty, print all containers
+
+    if [ -z "$container_search" ]; then
         docker ps $all_flag -q | while read -r container_id; do
             _print_container_info "$container_id"
         done
     else
-        # print all containers that ID or Name starts with ${1}
-        docker container ls $all_flag --format "{{.ID}} {{.Names}}" | awk "/^${container_search}|[[:space:]]${container_search}/ {print \$1}" | while read -r container_id; do
+        docker container ls $all_flag --format "{{.ID}} {{.Names}}" | \
+        awk "/^$container_search|[[:space:]]$container_search/ {print \$1}" | \
+        while read -r container_id; do
             _print_container_info "$container_id"
         done
     fi
@@ -46,70 +57,66 @@ function dz.ip() {
 
 # net [id] - Prints out a networks's name, IPs and gateways. If no id or name provided, prints info for all networks.
 function dz.net() {
-    _print_network_info() {
-        # return if ${1} is empty
-        if [ -z ${1} ]; then
-            return
-        fi
-
-        network_inspect=$(docker network inspect --format "{{slice .Id 0 12}}""\
-,{{.Name}}""\
-,{{range .IPAM.Config}}{{.Subnet}}{{end}}""\
-,{{range .IPAM.Config}}{{if (index . \"Gateway\")}}{{.Gateway}}{{end}}{{end}}" \
-            "${1}")
-
-        echo $network_inspect >>/tmp/dz.net.txt
-    }
-
     echo "Network ID,Network Name,Network Subnet,Network Gateway" >/tmp/dz.net.txt
 
     local network_id
-    if [ -z "${1}" ]; then
-        # if ${1} is empty, print all networks
+    local network_search="$1"
+
+    if [ -z "$network_search" ]; then
         docker network ls --format "{{.ID}}" | while read -r network_id; do
             _print_network_info "$network_id"
         done
     else
-        # print all networks that ID or Name starts with ${1}
-        docker network ls --format "{{.ID}} {{.Name}}" | awk "/^${1}|[[:space:]]${1}/ {print \$1}" | while read -r network_id; do
+        docker network ls --format "{{.ID}} {{.Name}}" | \
+        awk "/^$network_search|[[:space:]]$network_search/ {print \$1}" | \
+        while read -r network_id; do
             _print_network_info "$network_id"
         done
     fi
 
     column -s "," -t /tmp/dz.net.txt
-
-    rm -r /tmp/dz.net.txt
+    rm /tmp/dz.net.txt
 }
 
 # sh [id] - Attach a shell to a docker with an id
 function dz.sh() {
-    if [ -z $2 ]; then
-        docker exec -it $1 /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+    local user_id="$1"
+    local container_id="$2"
+
+    if [ -z "$container_id" ]; then
+        docker exec -it "$user_id" /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
     else
-        docker exec -u $1 -it $2 /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
+        docker exec -u "$user_id" -it "$container_id" /bin/sh -c "[ -e /bin/bash ] && /bin/bash || /bin/sh"
     fi
 }
 
+# logs [id] - Tail and follow the logs of a docker container
 function dz.logs() {
-    if [ -z $2 ]; then
-        docker logs -fn 0 $1
+    local num_lines="$1"
+    local container_id="$2"
+
+    if [ -z "$container_id" ]; then
+        docker logs -fn 0 "$num_lines"
     else
-        docker logs -fn $1 $2
+        docker logs -fn "$num_lines" "$container_id"
     fi
 }
 
+# v [filter] - Print volumes with sizes
 function dz.v() {
-    if [ -z $1 ]; then
+    local filter="$1"
+    if [ -z "$filter" ]; then
         docker volume ls -f dangling=true --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
-    elif [ $1 == "all" ]; then
+    elif [ "$filter" == "all" ]; then
         docker volume ls --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
     else
-        docker volume ls -f $1 --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
+        docker volume ls -f "$filter" --format '{{ .Mountpoint }}' | sudo xargs -L1 du -sh
     fi
 }
 
+# help [command] - Show help for a specific command
 function dz.help() {
-    if [ "$(type -t dz.$1)" == "function" ]; then
+    if [ "$(type -t dz."$1")" == "function" ]; then
         declare -f "dz.$1" | sed '1,2d;$d' | sed -e "s/^    //"
     else
         echo "ez docker"
@@ -124,7 +131,7 @@ function dz.help() {
     fi
 }
 
-if [ "$(type -t dz.$1)" == "function" ]; then
+if [ "$(type -t dz."$1")" == "function" ]; then
     "dz.$@"
 elif [ "$1" == "-h" ]; then
     dz.help
