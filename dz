@@ -116,7 +116,11 @@ function dz.v() {
 
 # bb [command] - Start a busybox container with an optional command
 function dz.bb() {
-    docker run -it --rm busybox "$@"
+    if [ -t 0 ]; then
+        docker run -it --rm busybox "$@"
+    else
+        docker run -i --rm busybox "$@"
+    fi
 }
 
 # help [command] - Show help for a specific command
