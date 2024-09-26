@@ -118,7 +118,7 @@ function dz.v() {
 function dz.bb() {
     local command="$1"
     if [ -z "$command" ]; then
-        docker run -it --rm busybox sh
+        docker run -it --rm busybox
     else
         docker run -it --rm busybox "$command"
     fi
@@ -138,7 +138,7 @@ function dz.help() {
         echo "dz v [filter]             prints volumes with sizes (dangling if blank, all if 'all')"
         echo "dz sh [USERNAME] <ID>     bash into a container with optional username"
         echo "dz logs [NUM_LINES] <ID>  tail (and follow) a container's logs (0 lines if blank)"
-        echo "dz bb [COMMAND]           start a busybox container with optional command ('sh' if blank)"
+        echo "dz bb [COMMAND]           start a busybox container with optional command"
     fi
 }
 
