@@ -126,9 +126,9 @@ function dz.bb() {
 # bb [command] - Start a ubuntu container with an optional command
 function dz.ub() {
     if [ -t 0 ]; then
-        docker run -it --rm ubuntu "$@"
+        docker run -it --rm catthehacker/ubuntu:act-latest "$@"
     else
-        docker run -i --rm ubuntu "$@"
+        docker run -i --rm catthehacker/ubuntu:act-latest "$@"
     fi
 }
 
