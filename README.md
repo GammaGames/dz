@@ -17,3 +17,4 @@ alias dz='. ~/Documents/dz/dz'
 | `dz sh [USERNAME] <ID>` | bash into a container with optional username |
 | `dz logs [NUM_LINES] <ID>` | tailg (and follow) a container's logs (0 lines if blank) |
 | `dz bb [COMMAND]` | start a busybox container with optional command |
+| `dz ub [COMMAND]` | start a ubuntu container with optional command |
