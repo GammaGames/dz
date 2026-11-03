@@ -114,21 +114,17 @@ function dz.v() {
     fi
 }
 
+# fs - Print
+function dz.fs() {
+    docker image ls -q | xargs docker inspect | jq '[.[]|{tags:.RepoTags,image:.Id,layers:([.GraphDriver.Data[]|split(":")]|flatten)}]'
+}
+
 # bb [command] - Start a busybox container with an optional command
 function dz.bb() {
     if [ -t 0 ]; then
         docker run -it --rm busybox "$@"
     else
         docker run -i --rm busybox "$@"
-    fi
-}
-
-# bb [command] - Start a ubuntu container with an optional command
-function dz.ub() {
-    if [ -t 0 ]; then
-        docker run -it --rm catthehacker/ubuntu:act-latest "$@"
-    else
-        docker run -i --rm catthehacker/ubuntu:act-latest "$@"
     fi
 }
 
@@ -144,10 +140,10 @@ function dz.help() {
         echo "                          -all option to search non running containers"
         echo "dz net [ID]               print a networks's name, IPs and gateways (all networks if blank)"
         echo "dz v [filter]             prints volumes with sizes (dangling if blank, all if 'all')"
+        echo "dz fs                     prints all images with their layers mapped to /var/lib/docker/overlay2 folders (requires jq)"
         echo "dz sh [USERNAME] <ID>     bash into a container with optional username"
         echo "dz logs [NUM_LINES] <ID>  tail (and follow) a container's logs (0 lines if blank)"
         echo "dz bb [COMMAND]           start a busybox container with optional command"
-        echo "dz ub [COMMAND]           start a busybox container with optional command"
     fi
 }
 
