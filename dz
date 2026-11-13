@@ -7,7 +7,7 @@ _print_container_info() {
 
     local container_inspect
     container_inspect=$(docker container inspect --format \
-        '{{slice .Id 0 12}},{{slice .Name 1}},{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}},'\
+        '{{slice .Id 0 12}},{{slice .Name 1}},{{with index .State "Health"}}{{.Status}}{{end}},{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}},'\
 '{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{if ne (index $conf 0).HostIp "0.0.0.0"}}{{(index $conf 0).HostIp}}:{{end}}{{(index $conf 0).HostPort}}{{else}}null{{end}}:{{$p}} {{end}},'\
 '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}},{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}' \
         "$container_id")
@@ -30,7 +30,7 @@ _print_network_info() {
 
 # ip [id] - Prints out a container's name, IPs, ports, networks and gateways. If no id or name provided, prints info for all containers.
 function dz.ip() {
-    echo "Container Id,Container Name,Container IPs,Container Ports,Container Networks,Container Gateways" >/tmp/dz.ip.txt
+    echo "Container Id,Container Name,Health,Container IPs,Container Ports,Container Networks,Container Gateways" >/tmp/dz.ip.txt
 
     local all_flag=""
     local container_search="$1"
